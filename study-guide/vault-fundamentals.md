@@ -84,16 +84,67 @@ For more info, visit: https://www.vaultproject.io/docs/concepts/auth
 For more info, visit: https://www.vaultproject.io/docs/concepts/tokens
 
 ### Response Wrapping
+- Response Wrapping is the idea that when a secret is requested (TLS private key for example), Vault can take that response it would have sent to an HTTP client, inserted it into the cubbyhole of a single-use token, returning that single-use token instead. This response is wrapped by the token and retrieving it requires unwrapping.
+- It ensures that the value being transmitted is not the actual secret but a reference to a secret.
+- It provides interception/tampering detection, ensuring that only a single party can unwrap the token.
+- It also limits the lifetime of secret exposure because the token has a lifetime that is separate from the wrapped secret.
+- When a response is wrapped it contains the following: 
+  - TTL of the response-wrapping token
+  - The token value
+  - Creation time of the response-wrapping token
+  - Creation path
+  - Wrapped accessor
+- Via the sys/wrapping path, you can do the following:
+  - Lookup the response-wrapping token's creation time, path, TTL etc. This path is unauthenticated
+  - Unwrapping the token
+  - Rewrapping the token
+  - Wrapping the token
 
-For more info, visit: 
+For more info, visit: https://www.vaultproject.io/docs/concepts/response-wrapping
 
 ### Policies
+- Policies provide a way to grant or forbid access to paths or operations within Vault. It is a deny all by default.
+- Vault setup:
+  - Security team configures Vault against an Auth method (such as LDAP)
+  - The security team will then write up a policy which grants access to paths in Vault
+  - This policy is then stored in Vault and referenced by name
+  - The security team will then map data in the auth method to a policy. For example: "Members of the OU group 'dev' map to the policy named 'readonly-dev'"
+- Once this has complete, when a user authenticates Vault, they will automatically pick up the delegated policy. In this process Vault will generate a token and attach the policies to that token. This token is then returned to the user.
+- If the user has to re-auth, they will be presented with a new token.
+- Authenticating a second time does not invalidate the original token.
+- Each path must define one or more capabilities which provides the fine-grained control over operations. These include:
+  - create, create & update, read, update, delete, list
+  - In addition to standard set above: sudo, deny
+- Finer grained controls can be set at given paths. For example, asking for required, allowed or denied parameters at a given path.
+- Vault has 2 built in policies which are default and root:
+  - Default Policy
+    - By default, this policy is attached to all tokens but may be excluded at token creation time by supporting auth methods
+    - To view permissions of the default policy, use 'vault read sys/policy/default'
+    - To disable attachment of the default policy use 'vault token create -no-default-policy'
+  - Root Policy
+    - Any user associated with this policy becomes a root user
+    - The root token should be revoked once Vault is configured. To do this, run 'vault token revoke "<token>"'
+- To create a new policy, run the 'vault policy write policy-name policy-file.hcl' command.
+- To update an existing policy, run the 'vault write sys/policy/my-existing-policy policy=@updated-policy.json' command.
+- To delete a policy, run the 'vault delete sys/policy/policy-name' command.
 
-For more info, visit: 
+For more info, visit: https://www.vaultproject.io/docs/concepts/policies
 
 ### Password Policies
+- A password policy is a set of instructions on how to generate a password. Not all secrets engines utilise password policies, so check the documentation for supported secrets engines.
+- Passwords are randomly generated frm the de-duplicated union of charsets found in all rules and then checked against each of these rules to determine if the candidate password is valid according to the policy.
+- To generate a password, three things are needed:
+  - A cryptographic random number generator - this generates N numbers that correspond into the charset where N is the length of password we wish to use
+  - A character set (charset) to select characters from
+  - The password length
+- Preventing bias has also been taken into consideration. This is where some of the first characters in a charset can be selected more frequently than the remaining characters.
+- Password policies are defined in HCL or JSON.
+- Available parameters for configuring password policies:
+  - length - specifies how long the password will be. Must be >=4.
+  - charset - string representation of the charset that the rule observes. For example 'abcdefghijkl'
+  - min-chars - the minimum number of characters from that charset
 
-For more info, visit: 
+For more info, visit: https://www.vaultproject.io/docs/concepts/password-policies
 
 ### High Availability
 

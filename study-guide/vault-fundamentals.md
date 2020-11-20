@@ -147,29 +147,55 @@ For more info, visit: https://www.vaultproject.io/docs/concepts/policies
 For more info, visit: https://www.vaultproject.io/docs/concepts/password-policies
 
 ### High Availability
+- Vault HA mode is automatically enabled when using a data store that supports it. You can tell this by starting the server and seeing if "(HA available)" is output next to the data store information.
+- When in HA mode, one of the Vault servers grabs a lock within the data store and the other nodes become standby.
+- If a standby node receives traffic it will forward the request or redirect the client based on the architecture. Having HA does not increase scalability.
+- Hashicorp recommends direct access to Vault servers in HA configuration and NOT behind a load balancer.
 
-For more info, visit: 
+For more info, visit: https://www.vaultproject.io/docs/concepts/ha
 
 ### Integrated Storage
-
-For more info, visit: 
+- Used in version 1.4+, integrated storage option stores Vaults data on the server's file system and uses consensus protocol to replicate data to each server in the cluster.
+- If a new Vault node is joining an existing cluster is must use the same seal mechanism. Once a node has been joined it cannot be re-joined to a different cluster.
+- To join a node to a cluster, you can use the following CLI command: 'vault operator raft join https://node1.vault.local:8200'
+- To remote a peer node, you can use the following CLI command: 'vault operator raft remove-peer node1'
+- For communication, the cluster ports default to 8201.
+- 
+For more info, visit: https://www.vaultproject.io/docs/concepts/integrated-storage
 
 ### PGP, GPG & Keybase
+- Vault has the ability to integrate with OpenPGP-compatible programs like GPG and services like keybase.io to provider additional security when performing certain operations.
+- Bootstrapping Vault in the early days caused problems whereby when initialised, the user received a plain-text copy of the unseal keys. Since version 0.3, Vault can be initialised using PGP keys. Vault generates the unseal keys, immediately encrypts them using the users public PGP keys. Only the owner can then decrypt the value revealing the plain-text unseal key.
 
-For more info, visit: 
+For more info, visit: https://www.vaultproject.io/docs/concepts/pgp-gpg-keybase
 
 ### Recovery Mode
+- Vault can be started in recovery mode if required. In recovery mode, Vault:
+  - Is automatically unsealed once a recovery token is issued
+  - Only supports the sys/raw endpoint
+  - raw requests must be authenticated using a recovery token
+  - Will not form clusters or handle requests forwarded by other Vault servers
+- Only a single recovery token can be generated. If lost, Vault will need to be restarted and a new token generated.
 
-For more info, visit: 
+For more info, visit: https://www.vaultproject.io/docs/concepts/recovery-mode
 
 ### Resource Quotas
+- Every interaction with Vault needs to go through Vault's API. In huge organisations, this can consist of a high volume of API requests resulting in DOS issues with Vault nodes or clusters. Resource quotas allow Vault operators to specify limits on resources used in Vault - specifically it allows API rate limits to be created using a token bucket algorithm.
+- A rate limit quota defined at root level applies to all namespaces and mounts in Vault.
+- A rate limit quota defined on a namespace takes precedence over the global rate limit quotas.
+- A rate limit quota defined on a mount takes precedence over the global and namespace rate limit quotas.
 
-For more info, visit: 
+For more info, visit: https://www.vaultproject.io/docs/concepts/resource-quotas
 
 ### Client Count
+- Refers to counting how many active clients are using a Vault cluster.
+- When a token is created, Vault checks to see whether it belongs to an identity that's been active within the current month. New entities are added to a log in Vault storage periodically. Non-entities are added to the 'non-entity token' count.
+- At the end of each month, Vault creates precomputed reports listing the number of active entities, per namespace, in each time period.
+- Vault limits the amount of entities it records per month to 656,000 to prevent storage growth.
 
-For more info, visit: 
+For more info, visit: https://www.vaultproject.io/docs/concepts/client-count
 
 ### Transform
+- Transform provides mechanisms for transforming sensitive infromation to protect it even as it lives outside Vault's sphere.
 
-For more info, visit:
+For more info, visit: https://www.vaultproject.io/docs/concepts/transform

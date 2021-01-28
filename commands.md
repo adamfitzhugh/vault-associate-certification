@@ -139,3 +139,48 @@ vault write auth/approle/role/my-role \
     secret_id_num_uses=40 \
     token_policies=my-policy
 
+
+## Service Tokens
+Create a token with a use limit
+vault token create -use-limit=<number of uses>
+
+Renew a token
+vault token renew <token>
+
+Renew & extend token TTL
+vault token renew -increment"<duration>" <token>
+
+Create token with TTL of 60s
+vault token create -ttl=60s
+
+Create an orphan token (requires root token or sudo capability on the auth/token/create path)
+vault token create -orphan
+
+Create a batch token
+vault token create -type=batch
+
+
+## Transit Secrets Engine - Encryption as a Service
+Encrypt some data (this encrypts a value of 4111 1111 1111 1111)
+vault write transit/encrypt/orders \
+    plaintext=$(base64 <<< "4111 1111 1111 1111")
+
+Example Ciphertext from above data
+Key           Value
+---           -----
+ciphertext    vault:v1:cZNHVx+sxdMErXRSuDa1q/pz49fXTn1PScKfhf+PIZPvy8xKfkytpwKcbC0fF2U=
+
+To decrypt this, run the following
+vault write transit/decrypt/orders \
+    ciphertext="vault:v1:cZNHVx+sxdMErXRSuDa1q/pz49fXTn1PScKfhf+PIZPvy8xKfkytpwKcbC0fF2U="
+
+Key          Value
+---          -----
+plaintext    Y3JlZGl0LWNhcmQtbnVtYmVyCg==
+
+Output is displayed in base64-encoded. To reveal the plaintext, decode it
+base64 --decode <<< "Y3JlZGl0LWNhcmQtbnVtYmVyCg=="
+
+Rotate the encryption key
+vault write -f transit/keys/<key_ring_name>/rotate
+
